@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 void main() => runApp(MyApp());
 
@@ -44,16 +45,15 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  int _counter = 0;
+  String cid;
+  String originalMessage;
+  bool peerInit = false;
+  static const platform = const MethodChannel('flutter_ipfs_client');
 
-  void _incrementCounter() {
-    setState(() {
-      // This call to setState tells the Flutter framework that something has
-      // changed in this State, which causes it to rerun the build method below
-      // so that the display can reflect the updated values. If we changed
-      // _counter without calling setState(), then the build method would not be
-      // called again, and so nothing would appear to happen.
-      _counter++;
+  @override
+  void initState() {
+    platform.invokeMethod("init").then((res) {
+      print("Result for Init $res");
     });
   }
 
@@ -95,14 +95,37 @@ class _MyHomePageState extends State<MyHomePage> {
               'You have pushed the button this many times:',
             ),
             Text(
-              '$_counter',
+              '$cid',
               style: Theme.of(context).textTheme.display1,
             ),
+            Text(
+              '$originalMessage',
+              style: Theme.of(context).textTheme.display1,
+            ),
+            RaisedButton(
+              onPressed: () async {
+                Map args = Map();
+                args["cid"] = cid;
+                String message = await platform.invokeMethod("get_data", args);
+                print(message);
+                setState(() {
+                  originalMessage = message;
+                });
+              },
+              child: Text("Read DAta"),
+            )
           ],
         ),
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: _incrementCounter,
+        onPressed: () async {
+          Map args = Map();
+          args["data"] = "My First Test";
+          String _cid = await platform.invokeMethod("add_data", args);
+          setState(() {
+            cid = _cid;
+          });
+        },
         tooltip: 'Increment',
         child: Icon(Icons.add),
       ), // This trailing comma makes auto-formatting nicer for build methods.
